@@ -259,7 +259,7 @@ vgg = VGG19(include_top = False, input_shape=(96,96,3))
 
 Lambda = 0.05
 Eeta = 1 #both these values are supposed to be changed after epochs. The initial values are such that the GAN first predicts a rough figure about the images
-EPOCHS = 2000
+EPOCHS = 3000
 
 
 def train_step(input_lr_image, target, epoch):
@@ -267,7 +267,7 @@ def train_step(input_lr_image, target, epoch):
         gen_output = generator(input_lr_image, training=True)
 
         real_logits  = discriminator([input_lr_image, target , gen_output], training=True)
-        fake_logits  = discriminator([input_lr_image, target , gen_output], training=True)
+        fake_logits  = discriminator([input_lr_image, gen_output, target], training=True)
         gen_loss     = Lambda*generator_loss(fake_logits, real_logits)
         gen_loss    += Eeta*tf.reduce_mean(tf.abs(target - gen_output))
         feature_gen  = vgg(preprocess_input(gen_output))
@@ -275,7 +275,7 @@ def train_step(input_lr_image, target, epoch):
         vgg_loss     = tf.keras.losses.mean_squared_error(feature_gen , feature_real)
         gen_loss    += 100*vgg_loss
         gen_loss = tf.reduce_mean(gen_loss)
-        disc_loss = 5*discriminator_loss(fake_logits, real_logits)
+        disc_loss = discriminator_loss(fake_logits, real_logits)
 
     generator_gradients = gen_tape.gradient(gen_loss,
                                           generator.trainable_variables)
@@ -297,19 +297,18 @@ def fit(train_lr,train_hr, epochs):
           target  =  train_hr[4*i:4*i+4]
           gen_loss, disc_loss = train_step(input_image,target , epoch)
         print('Generator Loss', gen_loss, 'Discriminator Loss', disc_loss)
-        if (epoch + 1) % 100 == 0:
+        if (epoch + 1) % 50 == 0:
             checkpoint.save(file_prefix = checkpoint_prefix)
-        generated = generator(train_lr_dataset[0:5])
         print ('Time taken for epoch {} is {} sec\n'.format(epoch + 1,
                                                         time.time()-start))
 
-checkpoint_dir = 'esrgan_more_cbam_ckpts/'
+checkpoint_dir = '/mnt/dog/data/shubhlohiya/cs726/esrgan_more_cbam_updated_ckpts'
 checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
 checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer,discriminator_optimizer=discriminator_optimizer,generator=generator,discriminator=discriminator)
+checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
 
 fit(train_lr_dataset,train_hr_dataset, EPOCHS)
 
-checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
 
 
 

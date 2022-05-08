@@ -266,7 +266,7 @@ def train_step(input_lr_image, target, epoch):
         gen_output = generator(input_lr_image, training=True)
 
         real_logits  = discriminator([input_lr_image, target , gen_output], training=True)
-        fake_logits  = discriminator([input_lr_image, target , gen_output], training=True)
+        fake_logits  = discriminator([input_lr_image,  gen_output, target], training=True)
         gen_loss     = Lambda*generator_loss(fake_logits, real_logits)
         gen_loss    += Eeta*tf.reduce_mean(tf.abs(target - gen_output))
         feature_gen  = vgg(preprocess_input(gen_output))
@@ -302,7 +302,7 @@ def fit(train_lr,train_hr, epochs):
         print ('Time taken for epoch {} is {} sec\n'.format(epoch + 1,
                                                         time.time()-start))
 
-checkpoint_dir = 'ESRGAN_cbam_ckpts/'
+checkpoint_dir = '/mnt/dog/data/shubhlohiya/cs726/esrgan_cbam_updated_ckpts'
 checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
 checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer,discriminator_optimizer=discriminator_optimizer,generator=generator,discriminator=discriminator)
 
